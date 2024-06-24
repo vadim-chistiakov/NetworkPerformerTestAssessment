@@ -43,7 +43,7 @@ final class ImageLoaderViewModel: ObservableObject {
     private var downloadedImage: Image?
     
     init(
-        networkPerformer: NetworkOperationPerformer = .init(),
+        networkPerformer: NetworkOperationPerformer = NetworkOperationPerformerImpl(),
         networkMonitor: NetworkMonitor = .init(),
         networkService: NetworkService = NetworkServiceImpl()
     ) {
@@ -65,7 +65,7 @@ final class ImageLoaderViewModel: ObservableObject {
         }
     }
 
-    func loadImage(durationSeconds: TimeInterval = 15) async {
+    func loadImage(durationSeconds: TimeInterval = 5) async {
         isLoading = true
         errorMessage = nil
         do {
