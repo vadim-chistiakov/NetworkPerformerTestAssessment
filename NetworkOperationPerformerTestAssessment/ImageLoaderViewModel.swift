@@ -31,16 +31,28 @@ enum NetworkError: Error {
 @MainActor
 final class ImageLoaderViewModel: ObservableObject {
     
-    @Published var isLoading = true
-    @Published var errorMessage: String?
-    @Published var networkMessage: String?
-    @Published var image: Image? = nil
+    enum State {
+        case loading(alertText: String?)
+        case success(Image)
+        case failed(String)
+        
+        var isTerminated: Bool {
+            switch self {
+            case .loading:
+                return false
+            case .success, .failed:
+                return true
+            }
+        }
+    }
+    
+    @Published var state: State = .loading(alertText: nil)
 
     private let networkPerformer: NetworkOperationPerformer
     private let networkMonitor: NetworkMonitor
     private let networkService: NetworkService
     
-    private var downloadedImage: Image?
+    private var internalState: State = .loading(alertText: nil)
     
     init(
         networkPerformer: NetworkOperationPerformer = NetworkOperationPerformerImpl(),
@@ -57,7 +69,7 @@ final class ImageLoaderViewModel: ObservableObject {
             do {
                 try await Task.sleep(seconds: delay)
                 for await isConnected in await networkMonitor.addNetworkStatusChangeObserver() {
-                    networkMessage = !isConnected ? "No internet connection" : nil
+                    state = .loading(alertText: !isConnected ? "No internet connection" : nil)
                 }
             } catch {
                 print(error)
@@ -66,8 +78,7 @@ final class ImageLoaderViewModel: ObservableObject {
     }
 
     func loadImage(durationSeconds: TimeInterval = 5) async {
-        isLoading = true
-        errorMessage = nil
+        state = .loading(alertText: nil)
         do {
             try await networkPerformer.performNetworkOperation(using: {
                 do {
@@ -78,7 +89,7 @@ final class ImageLoaderViewModel: ObservableObject {
             }, withinSeconds: durationSeconds)
 
             try await Task.sleep(seconds: durationSeconds)
-            showImageState()
+            showResult()
         } catch {
             print(error)
             showErrorState(
@@ -90,7 +101,8 @@ final class ImageLoaderViewModel: ObservableObject {
     // MARK: - Private methods
 
     private func updateDownloadedImage() async throws {
-        downloadedImage = try await downloadImage()
+        let image = try await downloadImage()
+        internalState = .success(image)
     }
 
     private func downloadImage() async throws -> Image {
@@ -100,14 +112,13 @@ final class ImageLoaderViewModel: ObservableObject {
         return try await networkService.fetchImage(from: url)
     }
 
-    private func showImageState() {
-        image = downloadedImage
-        errorMessage = image == nil ? NetworkError.somethingWentWrong.message : nil
-        isLoading = false
+    private func showResult() {
+        state = internalState
     }
 
     private func showErrorState(_ error: NetworkError) {
-        self.errorMessage = error.message
-        isLoading = false
+        let errorMessage = error.message
+        internalState = .failed(errorMessage)
+        state = internalState
     }
 }

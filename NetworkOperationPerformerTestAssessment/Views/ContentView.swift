@@ -17,23 +17,24 @@ struct ContentView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             VStack {
-                if let networkMessage = viewModel.networkMessage {
-                    Text(networkMessage)
-                        .foregroundStyle(.red)
-                        .bold()
-                }
-                if viewModel.isLoading {
+                switch viewModel.state {
+                case .loading(let networkMessage):
                     ProgressView()
+                    if let networkMessage {
+                        Text(networkMessage)
+                            .foregroundStyle(.red)
+                            .bold()
+                    }
                     Spacer()
                     Button("Cancel") {
                         taskId = nil
                     }
-                } else {
+                case .success, .failed:
                     EmptyView()
                 }
             }
-            .onChange(of: viewModel.isLoading) { _, isLoading in
-                if !isLoading {
+            .onChange(of: viewModel.state.isTerminated) { _, isTerminated in
+                if isTerminated {
                     navigationPath.append("ResultView")
                 }
             }

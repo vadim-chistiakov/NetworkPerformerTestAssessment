@@ -28,7 +28,10 @@ actor NetworkMonitor {
                     await self.updateStatus(isConnected)
                 }
             }
-            monitor.start(queue: DispatchQueue(label: "NetworkMonitor"))
+            if !isStarted {
+                monitor.start(queue: DispatchQueue(label: "NetworkMonitor"))
+                isStarted = true
+            }
         }
     }
     

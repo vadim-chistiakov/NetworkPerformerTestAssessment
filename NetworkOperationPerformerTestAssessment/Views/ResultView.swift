@@ -13,15 +13,17 @@ struct ResultView: View {
 
     var body: some View {
         VStack {
-            if let image = viewModel.image {
+            switch viewModel.state {
+            case .loading:
+                EmptyView()
+            case .success(let image):
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color(UIColor.systemBackground))
                     .transition(.opacity)
-            }
-            if let errorMessage = viewModel.errorMessage {
+            case .failed(let errorMessage):
                 Text(errorMessage)
                     .foregroundColor(.red)
             }
