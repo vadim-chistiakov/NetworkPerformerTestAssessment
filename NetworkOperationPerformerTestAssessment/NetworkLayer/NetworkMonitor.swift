@@ -11,6 +11,8 @@ import Network
 actor NetworkMonitor {
     
     private let monitor: NWPathMonitor
+    private let accessQueue = DispatchQueue(label: "NetworkMonitorAccessQueue")
+
     private var isConnected = false
     private var isStarted = false
 
@@ -35,14 +37,21 @@ actor NetworkMonitor {
         }
     }
     
-    func hasInternetConnection() -> Bool {
-        isConnected
+    /// The method is nonisolated cause it only read `isConnected` property
+    nonisolated func hasInternetConnection() -> Bool {
+        var result = false
+        accessQueue.sync {
+            result = isConnected
+        }
+        return result
     }
 
     // MARK: - Private methods
 
     private func updateStatus(_ isConnected: Bool) {
-        self.isConnected = isConnected
+        accessQueue.sync {
+            self.isConnected = isConnected
+        }
     }
     
 }

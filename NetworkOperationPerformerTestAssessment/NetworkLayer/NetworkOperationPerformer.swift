@@ -34,7 +34,7 @@ final class NetworkOperationPerformerImpl: NetworkOperationPerformer, Sendable {
         using closure: @escaping @Sendable () async -> Void,
         withinSeconds timeoutDuration: TimeInterval
     ) async throws {
-        if await networkMonitor.hasInternetConnection() {
+        if networkMonitor.hasInternetConnection() {
             await closure()
         } else {
             try await tryPerformingNetworkOperation(using: closure, withinSeconds: timeoutDuration)
